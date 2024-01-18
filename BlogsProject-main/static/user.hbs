@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <h1 id="role">Role: </h1>
+    <h2 id="name">Name:</h2>
+    <br>
+    <hr>
+    <div id="blogs">
+        <h1>Blogs:</h1>
+    </div>
+    <hr>
+    <div>
+        <h4>Add Blog</h4>
+        <form action="" id="addBlogs">
+            <label for="title">Title</label>
+            <input type="text" name="title">
+            <br>
+            <br>
+            <label for="content">Content</label>
+            <input type="text" name="content" maxlength="100">
+
+            <input type="submit" value="Add Blog">
+        </form>
+    </div>
+    <hr>
+    <div id="admin">
+        <h1>Requests:</h1>
+        <br>
+        <div id="requests"></div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+
+</body>
+<script>
+    let role = document.getElementById('role');
+    let name = document.getElementById('name');
+    let blogs = document.getElementById('blogs');
+
+    async function fetchData(link, mode){
+            try{
+                const response = await fetch(link,{method: mode,
+                    mode: 'cors',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+                const data = response.json();
+                return data;
+            }
+            catch(error){
+                console.log("error");
+                console.log(error.message);
+            }
+    }
+
+        async function renderData() {  
+  try {
+    const data = await fetchData('http://localhost:4000/users/showUserData','GET');
+    const dataBlogs = await fetchData(`http://localhost:4000/blogs/getBlogs?name=${data.message.name}`,'GET');
+    if (!data) {
+      console.error("Invalid data format:", data);
+      return;
+    }
+
+    role.innerHTML+=data.message.role;
+    name.innerHTML+=data.message.name;
+
+    const admin = document.getElementById("admin");
+
+        if(data.message.role!=="Admin"){
+            admin.style.display = "none";
+        }
+
+
+    if(dataBlogs.blogs){dataBlogs.blogs.forEach((item, idx) => {
+      const title = document.createElement('h2');
+      title.textContent = "Title: "+item.title;
+
+      const body = document.createElement('p');
+      body.textContent = "Content "+item.content;
+
+      blogs.appendChild(title);
+      blogs.appendChild(body);
+    });}
+
+    const reqData = await fetchData("http://localhost:4000/blogs/getReq");
+    console.log(reqData.blogs);
+
+    const requestsBody = document.getElementById("requests");
+    
+    reqData.blogs.forEach((blogs) => {
+    requestsBody.innerHTML +=
+        "Title: " + blogs.blogs.title + `<br>` +
+        "Content: " + blogs.blogs.content + `<br>` +
+        "Name: " + blogs.user.name + `<br><br>` +
+        `<button onclick="rejectBlog('${blogs._id}')">Reject</button>` +
+        `<button onclick="acceptBlog('${blogs._id}')">Accept</button><br><hr>`;
+});
+
+
+
+  } catch (error) {
+    console.error("Error fetching or rendering data:", error);
+  }
+    }
+
+        renderData();
+
+        let addBlogForm = document.getElementById("addBlogs");
+
+        addBlogForm.addEventListener('submit',(e)=>{
+            e.preventDefault();
+
+            let inputTitle = addBlogForm.querySelector('[name="title"]').value;
+            let inputContent = addBlogForm.querySelector('[name="content"]').value;
+
+            axios.post('http://localhost:4000/blogs/addBlog',{
+                title:inputTitle,
+                content:inputContent
+            }).then(response=>{
+                console.log(response.data);
+            })
+
+            addBlogForm.reset();
+        })
+
+        const rejectBlog = (id)=>{
+            console.log(id);
+            axios.post(`http://localhost:4000/blogs/sendRes?id=${id}&status=Rejected`);
+        }
+
+        const acceptBlog = (id)=>{
+            console.log("Accepted");
+            axios.post(`http://localhost:4000/blogs/sendRes?id=${id}&status=Approved`);
+        }
+
+        
+
+
+
+
+</script>
+</html>

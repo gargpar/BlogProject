@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <title>Document</title>
+</head>
+
+<body>
+
+    <div id="btns">
+        <button id="login">Login</button>
+        <button id="signUp">SignUp</button>
+    </div>
+
+    <div class="signUp" style="display: block;">
+        SignUp:
+        <br>
+        <br>
+        <form action="" id="signUpForm">
+            <label for="name">Name:</label><br>
+            <input type="text" name="name"><br>
+
+            <label for="email">Email:</label><br>
+            <input type="text" name="email"><br>
+
+            <label for="password">Password:</label><br>
+            <input type="password" name="password"><br>
+
+            <input type="submit" name="submit" value="Sign Up">
+        </form>
+    </div>
+ 
+    <div class="login" style="display: none;">
+        Login:
+        <br>
+        <br>
+        <form action="" id="loginForm">
+            <label for="email">Email:</label><br>
+            <input type="text" name="email"><br>
+
+            <label for="password">Password:</label><br>
+            <input type="password" name="password"><br>
+
+            <input type="submit" name="submit" value="Login">
+        </form>
+
+    </div>
+    <div id="blogs"></div>
+    <script src="https://cdn.socket.io/4.7.3/socket.io.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+
+</body>
+ 
+    <script>
+        
+        const socket = io();
+
+        const login = document.getElementsByClassName('login')[0];
+        const loginBtn = document.getElementById('login');
+        const signUp = document.getElementsByClassName('signUp')[0];
+        const signUpBtn = document.getElementById('signUp');
+        loginBtn.addEventListener('click',()=>{
+            signUp.style.display = 'none';
+            login.style.display = 'block';
+        })
+        signUpBtn.addEventListener('click',()=>{
+            signUp.style.display = 'block';
+            login.style.display = 'none';
+        })
+
+        async function fetchData(){
+            try{
+                const response = await fetch('http://localhost:4000/blogs/showAllBlogs',{method: 'GET',
+                    mode: 'cors',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+                const data = response.json();
+                return data;
+            }
+            catch(error){
+                console.log("error");
+                console.log(error.message);
+            }
+        }
+
+        async function renderData() {  
+  try {
+    const data = await fetchData();
+
+    if (!data || !data.blogs) {
+      console.error("Invalid data format:", data);
+      return;
+    }
+
+    const blogsContainer = document.getElementById('blogs');
+    data.blogs.forEach((item, idx) => {
+      const title = document.createElement('h2');
+      title.textContent = item.title;
+
+      const body = document.createElement('p');
+      body.textContent = item.content;
+
+      blogsContainer.appendChild(title);
+      blogsContainer.appendChild(body);
+    });
+  } catch (error) {
+    console.error("Error fetching or rendering data:", error);
+  }
+    }
+
+        renderData();
+
+        const loginForm = document.getElementById('loginForm');
+        const signUpForm = document.getElementById('signUpForm');
+
+        signUpForm.addEventListener('submit',(ev)=>{
+            ev.preventDefault();
+
+            let inputName = signUpForm.querySelector('[name="name"]').value;
+            let inputEmail = signUpForm.querySelector('[name="email"]').value;
+            let inputPassword = signUpForm.querySelector('[name="password"]').value;
+
+            axios.post('/users/signUp',{
+                name:inputName,
+                email:inputEmail,
+                password:inputPassword,
+                role:"User"
+            })
+
+            signUpForm.reset();
+
+        })
+
+
+        loginForm.addEventListener('submit',(ev)=>{
+            ev.preventDefault();
+
+            let inputEmail = loginForm.querySelector('[name="email"]').value;
+            let inputPassword = loginForm.querySelector('[name="password"]').value;
+
+            const response = axios.post('/users/login',{
+                email:inputEmail,
+                password:inputPassword,
+            }).then(response => {
+        console.log("Login successful:", response.data);
+        window.location.href = '/users';
+        loginForm.reset();
+    })
+    .catch(error => {
+        console.error("Login failed:", error.response.data.message);
+    });
+
+                      
+        })
+
+
+
+    </script>
+
+
+</html>
